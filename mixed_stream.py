@@ -1,4 +1,4 @@
-from numpy import sqrt
+from numpy import sqrt, NaN
 
 MFP = lambda mach, gamma, r: (
         mach * sqrt(gamma_t / r) / (1 + (gamma - 1) / 2 * mach ** 2) ** ((gamma + 1) / (2 * (gamma - 1))))
@@ -94,7 +94,7 @@ def calculate(pi_c, pi_f, M_0, has_after_burner=True):
 
     pi_cH = pi_c / pi_f
 
-    tau_cH = pi_cH ** ((gamma_c - 1) / (gamma_c * e_c))
+    tau_cH = pi_cH ** ((gamma_c - 1) / (gamma_c * e_f))
 
     eta_cH = (pi_cH ** ((gamma_c - 1) / gamma_c) - 1) / (tau_cH - 1)
 
@@ -122,7 +122,9 @@ def calculate(pi_c, pi_f, M_0, has_after_burner=True):
     '''BALANÇO DE ENERGIA TURBINA DE BAIXA'''
 
     alpha = (eta_mL * (1 + f_b) * (tau_lambda / tau_r) * (
-            1 - (pi_f / (pi_cH * pi_b)) ** ((gamma_t - 1) * e_tL / gamma_t)) - (tau_cH - 1)) / (tau_f - 1)
+            1 - tau_tL*tau_tH) - (tau_cH*tau_f - 1)) / (tau_f - 1)
+
+    # alpha = ((1 + f_b) * (1 - tau_tL*tau_tH) / (tau_f - 1) * eta_mL * tau_lambda / (tau_r * tau_d)) - 1
 
     alpha_prime = alpha / (1 + f_b)
 
@@ -201,8 +203,8 @@ def calculate(pi_c, pi_f, M_0, has_after_burner=True):
 
     eta_o = eta_p * eta_t
 
-    return [ISP, S, alpha]
+    return ISP, S, alpha
 
 
 if __name__ == '__main__':
-    print(calculate(20, 5, 0.9))
+    print(calculate(40, 5, 2))
