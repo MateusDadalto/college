@@ -3,6 +3,10 @@ import numpy as np
 MFP = lambda mach, gamma, r: (
         mach * np.sqrt(gamma_t / r) / (1 + (gamma - 1) / 2 * mach ** 2) ** ((gamma + 1) / (2 * (gamma - 1))))
 
+phi = lambda mach, gamma: mach ** 2 * (1 + (gamma - 1) / 2 * mach ** 2) / (1 + gamma * mach ** 2) ** 2
+
+has_after_burner = True
+
 gamma_c = 1.4
 
 c_pc = 1004.8
@@ -41,7 +45,7 @@ e_tL = 0.91
 
 pi_n = 0.98
 
-h_pr = 42798.4 * 1000
+h_PR = 42798.4 * 1000
 
 T_t4 = 1666.7
 
@@ -54,6 +58,10 @@ pi_b = 0.96
 eta_AB = 0.95
 
 pi_AB = 0.94
+
+R_c = 287
+
+R_t = 291
 
 pi_c = 20  # variando até 40
 
@@ -95,7 +103,7 @@ eta_cH = (pi_cH ** ((gamma_c - 1) / gamma_c) - 1) / (tau_cH - 1)
 tau_lambda = c_pt * T_t4 / (c_pc * T_0)
 
 # fuel - air ratio
-f_b = (tau_lambda - tau_r * tau_d * tau_f * tau_cH) / (eta_b * h_pr / (c_pc * T_0) - tau_lambda)
+f_b = (tau_lambda - tau_r * tau_d * tau_f * tau_cH) / (eta_b * h_PR / (c_pc * T_0) - tau_lambda)
 
 '''TURBINA DE ALTA PRESSÃO (4-4.5)'''
 
@@ -125,3 +133,70 @@ P_t16_P_t5_ratio = 1
 M_16 = np.sqrt(
     2 / (gamma_c - 1) * ((P_t16_P_t5_ratio * (1 + (gamma_t - 1) / 2 * M_5 ** 2)) ** (gamma_t / (gamma_t - 1))) ** (
             (gamma_c - 1) / gamma_c) - 1)
+
+c_p6 = (c_pt + alpha_prime * c_pc) / (1 + alpha_prime)
+
+R_6 = (R_t + alpha_prime * R_c) / (1 + alpha_prime)
+
+gamma_6 = c_p6 / (c_p6 - R_6)
+
+T_t16_T_t5_ratio = T_0 * tau_f / (T_t4 * tau_tH * tau_tL)
+
+tau_M = c_pt / c_p6 * ((1 + alpha_prime * (c_pc / c_pt) * T_t16_T_t5_ratio) / (1 + alpha_prime))
+
+PHI = ((1 + alpha_prime) / (1 / (np.sqrt(phi(M_5, gamma_t))) + alpha_prime * np.sqrt(
+    (R_c * gamma_t * T_t16_T_t5_ratio) / (R_t * gamma_c * phi(M_16, gamma_c))))) ** 2 * (R_6 * gamma_t * tau_M) / (
+              R_t * gamma_6)
+
+M_6 = np.sqrt(2 * PHI / (1 - 2 * gamma_6 * PHI + np.sqrt(1 - 2 * (gamma_6 + 1) * PHI)))
+
+A_16_A_5_ratio = alpha_prime * np.sqrt(T_t16_T_t5_ratio) / (M_16 / M_5 * np.sqrt(
+    gamma_c * R_t / (gamma_t * R_c) * (1 + (gamma_c - 1) / 2 * M_16 ** 2) / (1 + (gamma_t - 1) / 2 * M_5 ** 2)))
+
+pi_M = ((1 + alpha_prime) * np.sqrt(tau_M)) / (1 + A_16_A_5_ratio) * MFP(M_5, gamma_t, R_t) / MFP(M_6, gamma_6, R_6)
+
+'''PÓS QUEIMADOR'''
+
+if has_after_burner:
+    tau_lambdaAB = c_pAB * T_t7 / (c_p6 * T_0)
+
+    f_AB = (tau_lambdaAB - c_pc / c_pt * tau_lambda * tau_tL * tau_tH * tau_M) / (
+            eta_AB * h_PR / (c_p6 * T_0) - tau_lambdaAB)
+
+else:
+    tau_lambdaAB = 1
+    f_AB = 0
+
+'''TUBEIRA (7-8-9)'''
+
+tau_n = 1
+
+P_t9_P_9_ratio = P_0_P_9_ratio * pi_r * pi_d * pi_f * pi_cH * pi_b * pi_tH * pi_tL * pi_M * pi_AB * pi_n
+
+M_9 = np.sqrt(2 / (gamma_t - 1) * (P_t9_P_9_ratio ** ((gamma_t - 1) / gamma_t) - 1))
+
+T_t9_T_0_ratio = c_pc / c_pt * tau_lambda * tau_tH * tau_tL * tau_M * tau_lambdaAB * tau_n
+
+T_9_T_0_ratio = T_t9_T_0_ratio / (P_t9_P_9_ratio) ** ((gamma_AB - 1) / gamma_AB)
+
+V_9_a_0_ratio = M_9 * np.sqrt(gamma_AB * R_t / (gamma_c * R_c) * T_9_T_0_ratio)
+
+a_0 = np.sqrt(gamma_c * R_c * T_0)
+
+'''EMPUXO ESPECÍFICO'''
+
+ISP = a_0 * (V_9_a_0_ratio - M_0 + R_t * T_9_T_0_ratio / (R_c * V_9_a_0_ratio) * (1 - P_0_P_9_ratio) / gamma_c)
+
+'''CONSUMO ESPECÍFICO'''
+
+f = f_b / (1 + alpha) + f_AB
+
+S = f / ISP
+
+'''EFICIENCIAS'''
+
+eta_t = a_0 ** 2 * (V_9_a_0_ratio ** 2 - M_0 ** 2) / (2 * f * h_PR)
+
+eta_p = (2 * M_0 * ISP / a_0) / (V_9_a_0_ratio ** 2 - M_0 ** 2)
+
+eta_o = eta_p * eta_t
