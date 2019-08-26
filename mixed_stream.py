@@ -13,8 +13,6 @@ P_0 = 19391
 
 T_0 = 216.65
 
-H_0 = 12000
-
 gamma_t = 1.3
 
 gamma_AB = 1.3
@@ -119,12 +117,12 @@ def calculate(pi_c, pi_f, M_0, has_after_burner=True):
 
     pi_tL = tau_tL ** (gamma_t / ((gamma_t - 1) * e_tL))
 
-    '''BALANÇO DE ENERGIA TURBINA DE BAIXA'''
+    '''BALANCO DE ENERGIA TURBINA DE BAIXA'''
 
-    alpha = (eta_mL * (1 + f_b) * (tau_lambda / tau_r) * (
-            1 - tau_tL*tau_tH) - (tau_cH*tau_f - 1)) / (tau_f - 1)
+    # alpha = (eta_mL * (1 + f_b) * (tau_lambda / tau_r) * (
+    #         1 - tau_tL * tau_tH) -     (tau_cH * tau_f - 1)) / (tau_f - 1)
 
-    # alpha = ((1 + f_b) * (1 - tau_tL*tau_tH) / (tau_f - 1) * eta_mL * tau_lambda / (tau_r * tau_d)) - 1
+    alpha = ((1 + f_b) * (1 - tau_tL) / (tau_f - 1) * eta_mL * eta_mH * tau_lambda * tau_tH / (tau_r * tau_d)) - 1
 
     alpha_prime = alpha / (1 + f_b)
 
@@ -207,4 +205,4 @@ def calculate(pi_c, pi_f, M_0, has_after_burner=True):
 
 
 if __name__ == '__main__':
-    print(calculate(40, 5, 2))
+    print(calculate(20, 2, 2))
